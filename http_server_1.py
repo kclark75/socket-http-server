@@ -1,6 +1,9 @@
 import socket
 import sys
 import traceback
+from os import listdir
+from os.path import isfile, join
+import os
 
 def response_ok(body=b"This is a minimal response", mimetype=b"text/plain"):
     """
@@ -97,10 +100,14 @@ def response_path(path):
     # CONTENTS of `make_time.py`.
     content = (os.getcwd())
     onlyfiles = [f for f in listdir(content) if isfile(join(content, f))]
+    onlyfiles = str(onlyfiles)
+    content = onlyfiles.encode()
     
-    content = b"not implemented"
-    mime_type = b"text/directory"
+    mime_type = b"text/plain"
 
+    
+    
+    
     return content, mime_type
 
 
@@ -134,6 +141,7 @@ def server(log_buffer=sys.stderr):
                     path = parse_request(request)
                     # TODO: Use response_path to retrieve the content and the mimetype,
                     # based on the request path.
+                    content, mime_type = response_path(path)
                     
     
                     # TODO; If parse_request raised a NotImplementedError, then let
@@ -142,8 +150,8 @@ def server(log_buffer=sys.stderr):
                     # use the content and mimetype from response_path to build a
                     # response_ok.
                     response = response_ok(
-                        body=b"Welcome to my web server",
-                        mimetype=b"text/plain"
+                        body=content,
+                        mimetype=mime_type
                     )
                 except NotImplementedError:
                     response = response_method_not_allowed()
