@@ -87,6 +87,7 @@ def response_path(path):
 
     # TODO: Raise a NameError if the requested content is not present
     # under webroot.
+    
 
     # TODO: Fill in the appropriate content and mime_type give the path.
     # See the assignment guidelines for help on "mapping mime-types", though

@@ -1,6 +1,7 @@
 import socket
 import sys
 import traceback
+import mimetypes
 from os import listdir
 from os.path import isfile, join
 import os
@@ -43,7 +44,11 @@ def response_not_found():
     """Returns a 404 Not Found response"""
 
     # TODO: Implement response_not_found
-    return b""
+    return b"\r\n".join([
+        b"HTTP/1.1 404 Response not found",
+        b"",
+        b"Please enter existing file name and/or path!"
+    ])
 
 
 def parse_request(request):
@@ -59,6 +64,7 @@ def parse_request(request):
         raise NotImplementedError
     
     return path
+
 
 def response_path(path):
     """
@@ -87,29 +93,27 @@ def response_path(path):
         response_path('/a_page_that_doesnt_exist.html') -> Raises a NameError
 
     """
-
-    # TODO: Raise a NameError if the requested content is not present
-    # under webroot.
-
-    # TODO: Fill in the appropriate content and mime_type give the path.
-    # See the assignment guidelines for help on "mapping mime-types", though
-    # you might need to create a special case for handling make_time.py
-    #
+    path = "webroot" + path
+    is_directory = "." not in path
+    
+    if is_directory:
+        content = str(os.listdir(path)).encode()
+        mime_type = b"text/plain"
+       
+    else:
+        try:
+            with open(path, "rb") as f:
+                content = f.read()
+                mime_type = mimetypes.guess_type(path)[0]
+                mime_type = mime_type.encode()
+        except FileNotFoundError:
+            raise NameError
+        
+    return content, mime_type
+    
     # If the path is "make_time.py", then you may OPTIONALLY return the
     # result of executing `make_time.py`. But you need only return the
     # CONTENTS of `make_time.py`.
-    content = (os.getcwd())
-    onlyfiles = [f for f in listdir(content) if isfile(join(content, f))]
-    onlyfiles = str(onlyfiles)
-    content = onlyfiles.encode()
-    
-    mime_type = b"text/plain"
-
-    
-    
-    
-    return content, mime_type
-
 
 def server(log_buffer=sys.stderr):
     address = ('127.0.0.1', 10000)
@@ -133,28 +137,29 @@ def server(log_buffer=sys.stderr):
 
                     if '\r\n\r\n' in request:
                         break
-		
-    
+                        
                     print("Request received:\n{}\n\n".format(request))
-    
+ 
                 try:
-                    path = parse_request(request)
                     # TODO: Use response_path to retrieve the content and the mimetype,
                     # based on the request path.
+                    path = parse_request(request)
                     content, mime_type = response_path(path)
+                    response = response_ok(
+                        body=content,
+                        mimetype=mime_type
+                    )
                     
-    
                     # TODO; If parse_request raised a NotImplementedError, then let
                     # response be a method_not_allowed response. If response_path raised
                     # a NameError, then let response be a not_found response. Else,
                     # use the content and mimetype from response_path to build a
                     # response_ok.
-                    response = response_ok(
-                        body=content,
-                        mimetype=mime_type
-                    )
+                    
                 except NotImplementedError:
                     response = response_method_not_allowed()
+                except FileNotFoundError:
+                    response = response_not_found()
     
                 conn.sendall(response)
             except:
